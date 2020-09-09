@@ -50,8 +50,8 @@ impl<R: io::Read> BufferedReader<R> {
 
         let buf = vec![0; CAPACITY].into_boxed_slice();
         BufferedReader {
-            inner: inner,
-            buf: buf,
+            inner,
+            buf,
             pos: 0,
             num_valid: 0,
         }
@@ -439,7 +439,7 @@ impl<R: ReadBytes> Bitstream<R> {
     /// Wraps the reader with a reader that facilitates reading individual bits.
     pub fn new(reader: R) -> Bitstream<R> {
         Bitstream {
-            reader: reader,
+            reader,
             data: 0,
             bits_left: 0,
         }
@@ -472,8 +472,8 @@ impl<R: ReadBytes> Bitstream<R> {
         } else {
             // Consume the most significant bit of the buffer byte.
             let bit = self.data & 0b1000_0000;
-            self.data = self.data << 1;
-            self.bits_left = self.bits_left - 1;
+            self.data <<= 1;
+            self.bits_left -= 1;
             bit
         };
 
@@ -499,8 +499,8 @@ impl<R: ReadBytes> Bitstream<R> {
             // we count either 8 zeros, or less than 7. In the former case we
             // would not have taken this branch, in the latter the shift below
             // is safe.
-            self.data = self.data << (n + 1);
-            self.bits_left = self.bits_left - (n + 1);
+            self.data <<= n + 1;
+            self.bits_left -= n + 1;
         } else {
             // We inspected more bits than available, so our count is incorrect,
             // and we need to look at the next byte.
@@ -510,7 +510,7 @@ impl<R: ReadBytes> Bitstream<R> {
             loop {
                 let fresh_byte = self.reader.read_u8()?;
                 let zeros = fresh_byte.leading_zeros();
-                n = n + zeros;
+                n += zeros;
                 if zeros < 8 {
                     // We consumed the zeros, plus the one following it.
                     self.bits_left = 8 - (zeros + 1);
@@ -553,8 +553,8 @@ impl<R: ReadBytes> Bitstream<R> {
             let result = self.data & Bitstream::<R>::mask_u8(bits);
 
             // Shift out the bits that we have consumed.
-            self.data = self.data << bits;
-            self.bits_left = self.bits_left - bits;
+            self.data <<= bits;
+            self.bits_left -= bits;
 
             result
         };

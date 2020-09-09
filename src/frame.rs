@@ -71,9 +71,9 @@ fn read_var_length_int<R: ReadBytes>(input: &mut R) -> Result<u64> {
 
     // Determine the number of leading 1s.
     while first & mask_mark != 0 {
-        read_additional = read_additional + 1;
-        mask_data = mask_data >> 1;
-        mask_mark = mask_mark >> 1;
+        read_additional += 1;
+        mask_data >>= 1;
+        mask_mark >>= 1;
     }
 
     // A single leading 1 is a follow-up byte and thus invalid.
@@ -83,7 +83,7 @@ fn read_var_length_int<R: ReadBytes>(input: &mut R) -> Result<u64> {
         } else {
             // The number of 1s (if > 1) is the total number of bytes, not the
             // number of additional bytes.
-            read_additional = read_additional - 1;
+            read_additional -= 1;
         }
     }
 
@@ -98,7 +98,7 @@ fn read_var_length_int<R: ReadBytes>(input: &mut R) -> Result<u64> {
             return fmt_err("invalid variable-length integer");
         }
 
-        result = result | (((byte & 0b0011_1111) as u64) << (6 * i as usize));
+        result |= ((byte & 0b0011_1111) as u64) << (6 * i as usize);
     }
 
     Ok(result)
@@ -310,11 +310,11 @@ fn read_frame_header_or_eof<R: ReadBytes>(input: &mut R) -> Result<Option<FrameH
     let _ = computed_crc == presumed_crc;
 
     let frame_header = FrameHeader {
-        block_time: block_time,
-        block_size: block_size,
-        sample_rate: sample_rate,
-        channel_assignment: channel_assignment,
-        bits_per_sample: bits_per_sample,
+        block_time,
+        block_size,
+        sample_rate,
+        channel_assignment,
+        bits_per_sample,
     };
     Ok(Some(frame_header))
 }
@@ -430,7 +430,7 @@ impl Block {
             first_sample_number: time,
             block_size: bs,
             channels: buffer.len() as u32 / bs,
-            buffer: buffer,
+            buffer,
         }
     }
 
@@ -507,7 +507,7 @@ impl Block {
     #[inline(always)]
     pub fn sample(&self, ch: u32, sample: u32) -> i32 {
         let bsz = self.block_size as usize;
-        return self.buffer[ch as usize * bsz + sample as usize];
+        self.buffer[ch as usize * bsz + sample as usize]
     }
 
     /// Returns the underlying buffer that stores the samples in this block.
@@ -515,7 +515,7 @@ impl Block {
     /// This allows the buffer to be reused to decode the next frame. The
     /// capacity of the buffer may be bigger than `len()` times `channels()`.
     pub fn into_buffer(self) -> Vec<i32> {
-        return self.buffer;
+        self.buffer
     }
 
     /// Returns an iterator that produces left and right channel samples.
@@ -664,7 +664,7 @@ fn ensure_buffer_len_returns_buffer_with_new_len() {
 impl<R: ReadBytes> FrameReader<R> {
     /// Creates a new frame reader that will yield at least one element.
     pub fn new(input: R) -> FrameReader<R> {
-        FrameReader { input: input }
+        FrameReader { input }
     }
 
     /// Decodes the next frame or returns an error if the data was invalid.
