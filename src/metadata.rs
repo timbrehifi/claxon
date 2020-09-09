@@ -151,10 +151,9 @@ impl<'a> Iterator for Tags<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<(&'a str, &'a str)> {
-        return self
-            .iter
+        self.iter
             .next()
-            .map(|&(ref comment, sep_idx)| (&comment[..sep_idx], &comment[sep_idx + 1..]));
+            .map(|&(ref comment, sep_idx)| (&comment[..sep_idx], &comment[sep_idx + 1..]))
     }
 
     #[inline]
@@ -182,8 +181,8 @@ impl<'a> GetTag<'a> {
     #[inline]
     pub fn new(vorbis_comments: &'a [(String, usize)], needle: &'a str) -> GetTag<'a> {
         GetTag {
-            vorbis_comments: vorbis_comments,
-            needle: needle,
+            vorbis_comments,
+            needle,
             index: 0,
         }
     }
@@ -203,7 +202,7 @@ impl<'a> Iterator for GetTag<'a> {
             }
         }
 
-        return None;
+        None
     }
 }
 
@@ -220,9 +219,9 @@ fn read_metadata_block_header<R: ReadBytes>(input: &mut R) -> Result<MetadataBlo
     let length = input.read_be_u24()?;
 
     let header = MetadataBlockHeader {
-        is_last: is_last,
-        block_type: block_type,
-        length: length,
+        is_last,
+        block_type,
+        length,
     };
     Ok(header)
 }
@@ -271,16 +270,16 @@ pub fn read_metadata_block<R: ReadBytes>(
         }
         1 => {
             read_padding_block(input, length)?;
-            Ok(MetadataBlock::Padding { length: length })
+            Ok(MetadataBlock::Padding { length })
         }
         2 => {
             let (id, data) = read_application_block(input, length)?;
-            Ok(MetadataBlock::Application { id: id, data: data })
+            Ok(MetadataBlock::Application { id, data })
         }
         3 => {
             // TODO: implement seektable reading. For now, pretend it is padding.
             input.skip(length)?;
-            Ok(MetadataBlock::Padding { length: length })
+            Ok(MetadataBlock::Padding { length })
         }
         4 => {
             let vorbis_comment = read_vorbis_comment_block(input, length)?;
@@ -289,12 +288,12 @@ pub fn read_metadata_block<R: ReadBytes>(
         5 => {
             // TODO: implement CUE sheet reading. For now, pretend it is padding.
             input.skip(length)?;
-            Ok(MetadataBlock::Padding { length: length })
+            Ok(MetadataBlock::Padding { length })
         }
         6 => {
             // TODO: implement picture reading. For now, pretend it is padding.
             input.skip(length)?;
-            Ok(MetadataBlock::Padding { length: length })
+            Ok(MetadataBlock::Padding { length })
         }
         127 => {
             // This code is invalid to avoid confusion with a frame sync code.
@@ -368,8 +367,8 @@ fn read_streaminfo_block<R: ReadBytes>(input: &mut R) -> Result<StreamInfo> {
     }
 
     let stream_info = StreamInfo {
-        min_block_size: min_block_size,
-        max_block_size: max_block_size,
+        min_block_size,
+        max_block_size,
         min_frame_size: if min_frame_size == 0 {
             None
         } else {
@@ -380,7 +379,7 @@ fn read_streaminfo_block<R: ReadBytes>(input: &mut R) -> Result<StreamInfo> {
         } else {
             Some(max_frame_size)
         },
-        sample_rate: sample_rate,
+        sample_rate,
         channels: n_channels as u32,
         bits_per_sample: bits_per_sample as u32,
         samples: if n_samples == 0 {
@@ -388,7 +387,7 @@ fn read_streaminfo_block<R: ReadBytes>(input: &mut R) -> Result<StreamInfo> {
         } else {
             Some(n_samples)
         },
-        md5sum: md5sum,
+        md5sum,
     };
     Ok(stream_info)
 }
@@ -504,10 +503,7 @@ fn read_vorbis_comment_block<R: ReadBytes>(input: &mut R, length: u32) -> Result
         return fmt_err("Vorbis comment block contains wrong number of entries");
     }
 
-    let vorbis_comment = VorbisComment {
-        vendor: vendor,
-        comments: comments,
-    };
+    let vorbis_comment = VorbisComment { vendor, comments };
 
     Ok(vorbis_comment)
 }
@@ -567,10 +563,7 @@ pub type MetadataBlockResult = Result<MetadataBlock>;
 impl<R: ReadBytes> MetadataBlockReader<R> {
     /// Creates a metadata block reader that will yield at least one element.
     pub fn new(input: R) -> MetadataBlockReader<R> {
-        MetadataBlockReader {
-            input: input,
-            done: false,
-        }
+        MetadataBlockReader { input, done: false }
     }
 
     #[inline]
@@ -594,7 +587,7 @@ impl<R: ReadBytes> Iterator for MetadataBlockReader<R> {
 
             // After a failure, no more attempts to read will be made,
             // because we don't know where we are in the stream.
-            if !block.is_ok() {
+            if block.is_err() {
                 self.done = true;
             }
 

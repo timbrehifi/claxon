@@ -5,6 +5,7 @@
 // you may not use this file except in compliance with the License.
 // A copy of the License has been included in the root of the repository.
 
+#![allow(clippy::len_without_is_empty, clippy::needless_lifetimes)]
 //! Claxon, a FLAC decoding library.
 //!
 //! Examples
@@ -294,8 +295,8 @@ impl<R: io::Read> FlacReader<R> {
 
         // The flac reader will contain the reader that will read frames.
         let flac_reader = FlacReader {
-            streaminfo: streaminfo,
-            vorbis_comment: vorbis_comment,
+            streaminfo,
+            vorbis_comment,
             input: state,
         };
 

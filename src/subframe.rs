@@ -86,7 +86,7 @@ fn read_subframe_header<R: ReadBytes>(input: &mut Bitstream<R>) -> Result<Subfra
     }
 
     let subframe_header = SubframeHeader {
-        sf_type: sf_type,
+        sf_type,
         wasted_bits_per_sample: wasted_bits,
     };
     Ok(subframe_header)
@@ -99,7 +99,7 @@ fn extend_sign_u16(val: u16, bits: u32) -> i16 {
     // First shift the value so the desired sign bit is the actual sign bit,
     // then convert to a signed integer, and then do an arithmetic shift back,
     // which will extend the sign bit.
-    return ((val << (16 - bits)) as i16) >> (16 - bits);
+    ((val << (16 - bits)) as i16) >> (16 - bits)
 }
 
 #[test]
@@ -289,7 +289,7 @@ fn decode_residual<R: ReadBytes>(
             for _ in 0..n_partitions {
                 let slice = &mut buffer[start..start + len as usize];
                 decode_rice_partition(input, slice)?;
-                start = start + len as usize;
+                start += len as usize;
                 len = n_samples_per_partition;
             }
         }
@@ -299,7 +299,7 @@ fn decode_residual<R: ReadBytes>(
             for _ in 0..n_partitions {
                 let slice = &mut buffer[start..start + len as usize];
                 decode_rice2_partition(input, slice)?;
-                start = start + len as usize;
+                start += len as usize;
                 len = n_samples_per_partition;
             }
         }
@@ -557,7 +557,7 @@ fn predict_lpc_low_order(raw_coefficients: &[i16], qlp_shift: i16, buffer: &mut 
         let mut i = 12 - order;
         for c in raw_coefficients {
             buf[i] = *c as i64;
-            i = i + 1;
+            i += 1;
         }
         buf
     };
